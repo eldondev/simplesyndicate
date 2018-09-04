@@ -141,6 +141,7 @@ class Story < ApplicationRecord
     if self.url.present?
       check_already_posted
       check_not_tracking_domain
+      check_is_syndication_available
       errors.add(:url, "is not valid") unless url.match(URL_RE)
     elsif self.description.to_s.strip == ""
       errors.add(:description, "must contain text if no URL posted")
@@ -170,6 +171,13 @@ class Story < ApplicationRecord
     if self.already_posted_story.is_recent?
       errors.add(:url, "has already been submitted within the past " <<
         "#{RECENT_DAYS} days")
+    end
+  end
+
+  def check_is_syndication_available
+    page = Nokogiri::HTML(open(self.url))
+    if page.css("link[type='application/rss+xml']").empty?
+      errors.add(:url, "Page has no link to further news syndication")
     end
   end
 
